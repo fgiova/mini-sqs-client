@@ -57,7 +57,7 @@ await client.deleteMessage(message.ReceiptHandle);
 ## API
 
 ```typescript
-SQSClient(queueUrl: string, options?: SQSClientOptions)
+SQSClient(queueARN: string, endpoint?: string, undiciOptions?: Pool.Options, signer?: Signer | SignerOptions)
 SQSClient.sendMessage(message: SendMessage): Promise<SendMessageResult>
 SQSClient.sendMessageBatch(messages: SendMessage[]): Promise<SendMessageBatchResult>
 SQSClient.receiveMessage(options: ReceiveMessage): Promise<ReceiveMessageResult>
