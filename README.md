@@ -21,7 +21,7 @@ npm install @fgiova/mini-sqs-client
 ## Usage
 
 ```typescript
-import {SQSClient} from '@fgiova/mini-sqs-client'
+import {MiniSQSClient} from '@fgiova/mini-sqs-client'
 import console = require("console");
 
 const client = new MiniSQSClient("arn:aws:sqs:eu-central-1:000000000000:test");
@@ -57,14 +57,14 @@ await client.deleteMessage(message.ReceiptHandle);
 ## API
 
 ```typescript
-SQSClient(queueARN: string, endpoint?: string, undiciOptions?: Pool.Options, signer?: Signer | SignerOptions)
-SQSClient.sendMessage(message: SendMessage): Promise<SendMessageResult>
-SQSClient.sendMessageBatch(messages: SendMessage[]): Promise<SendMessageBatchResult>
-SQSClient.receiveMessage(options: ReceiveMessage): Promise<ReceiveMessageResult>
-SQSClient.deleteMessage(receiptHandle: string): Promise<boolean>
-SQSClient.deleteMessageBatch(receiptHandles: string[]): Promise<boolean>
-SQSClient.changeMessageVisibility(receiptHandle: string, visibilityTimeout: number): Promise<boolean>
-SQSClient.changeMessageVisibilityBatch(receiptHandles: string[], visibilityTimeout: number): Promise<boolean>
+MiniSQSClient(queueARN: string, endpoint?: string, undiciOptions?: Pool.Options, signer?: Signer | SignerOptions)
+MiniSQSClient.sendMessage(message: SendMessage): Promise<SendMessageResult>
+MiniSQSClient.sendMessageBatch(messages: SendMessage[]): Promise<SendMessageBatchResult>
+MiniSQSClient.receiveMessage(options: ReceiveMessage): Promise<ReceiveMessageResult>
+MiniSQSClient.deleteMessage(receiptHandle: string): Promise<boolean>
+MiniSQSClient.deleteMessageBatch(receiptHandles: string[]): Promise<boolean>
+MiniSQSClient.changeMessageVisibility(receiptHandle: string, visibilityTimeout: number): Promise<boolean>
+MiniSQSClient.changeMessageVisibilityBatch(receiptHandles: string[], visibilityTimeout: number): Promise<boolean>
 ```
 
 All types are defined in [schemas.ts](./src/schemas.ts) and are derived from the [AWS SQS API](https://docs.aws.amazon.com/AWSSimpleQueueService/latest/APIReference/API_Operations.html) <br />
