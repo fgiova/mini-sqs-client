@@ -69,6 +69,13 @@ test("MiniSQSClient Errors", async (t) => {
 		}).reply(500, "Generic Error");
 		await t.rejects(client.sendMessage(queueARN,message), Error("Generic Error"));
 	});
+	await t.test("sendMessage Error wrong region", async (t) => {
+		const { client }  = t.context;
+		const message: SendMessage = {
+			MessageBody: "Hello World!"
+		};
+		await t.rejects(client.sendMessage("arn:aws:sqs:eu-west-1:000000000000:test",message), Error("Region eu-west-1 does not match eu-central-1"));
+	});
 
 	await t.test("sendMessageBatch Error", async (t) => {
 		const { client }  = t.context;
