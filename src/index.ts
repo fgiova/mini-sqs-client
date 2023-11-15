@@ -10,20 +10,17 @@ import type {
 } from "./schemas";
 
 export class MiniSQSClient {
-	private readonly queueSettings: {
-		region: string,
-		accountId: string,
-		queueName: string,
-		host: string,
-		endpoint: string
-	};
 	private readonly pool: Pool;
 	private readonly undiciOptions: Pool.Options;
 	private readonly signer: Signer;
-	constructor (queueARN: string, endpoint?: string, undiciOptions?: Pool.Options, signer?: Signer | SignerOptions) {
+	private region: string;
+	private endpoint: string;
+
+	constructor (region: string, endpoint?: string, undiciOptions?: Pool.Options, signer?: Signer | SignerOptions) {
 		this.undiciOptions = undiciOptions;
-		this.queueSettings = this.getQueueARN(queueARN, endpoint);
-		this.pool = new Pool(this.queueSettings.endpoint, undiciOptions);
+		this.region = region;
+		this.endpoint = endpoint ?? `https://sqs.${region}.amazonaws.com`;
+		this.pool = new Pool(this.endpoint, undiciOptions);
 		if (signer instanceof Signer) {
 			this.signer = signer;
 		}
@@ -42,9 +39,10 @@ export class MiniSQSClient {
 		]);
 	}
 
-	private getQueueARN (queueARN: string, endpoint?: string) {
+	private getQueueARN (queueARN: string) {
 		const [queueName, accountId, region] = queueARN.split(":").reverse();
-		endpoint = endpoint ?? `https://sqs.${region}.amazonaws.com`;
+		if (region !== this.region) throw new Error(`Region ${region} does not match ${this.region}`);
+		const endpoint = this.endpoint;
 		const url = new URL(endpoint);
 		return {
 			region,
@@ -54,8 +52,14 @@ export class MiniSQSClient {
 			endpoint
 		}
 	}
-	private async SQSRequest<B,R>(body: B, target: SQSTarget, JSONResponse= true) {
-		const {region, accountId, queueName, host} = this.queueSettings;
+	private async SQSRequest<B,R>(body: B, target: SQSTarget, queueSettings: {
+		region: string,
+		accountId: string,
+		queueName: string,
+		host: string,
+		endpoint: string
+	}, JSONResponse= true) {
+		const {region, accountId, queueName, host} = queueSettings;
 		const requestBody = JSON.stringify({
 			...body
 		});
@@ -108,20 +112,22 @@ export class MiniSQSClient {
 		}, []);
 	}
 
-	async sendMessage (message: SendMessage) {
-		return this.SQSRequest<SendMessage, SendMessageResult>(message, "SendMessage");
+	async sendMessage (queueARN: string, message: SendMessage) {
+		const queueSettings = this.getQueueARN(queueARN);
+		return this.SQSRequest<SendMessage, SendMessageResult>(message, "SendMessage", queueSettings);
 	}
 
-	async sendMessageBatch (messages: SendMessageBatchItem[]) {
+	async sendMessageBatch (queueARN: string, messages: SendMessageBatchItem[]) {
 		if(!Array.isArray(messages)){
 			throw new Error("messages must be an array");
 		}
+		const queueSettings = this.getQueueARN(queueARN);
 		const messagesChunks = this.splitArrayMessages(messages);
 		const responses = {} as SendMessageBatchResult;
 		for(const messagesChunk of messagesChunks){
 			const responseChunk = await this.SQSRequest<{Entries:SendMessageBatchItem[]}, SendMessageBatchResult>({
 				Entries: messagesChunk
-			}, "SendMessageBatch");
+			}, "SendMessageBatch", queueSettings);
 			if(responseChunk.Failed ) {
 				if(!responses.Failed) responses.Failed = [];
 				responses.Failed.push(...responseChunk.Failed);
@@ -134,17 +140,19 @@ export class MiniSQSClient {
 		return responses;
 	}
 
-	async deleteMessage (receiptHandle: string) {
+	async deleteMessage (queueARN: string, receiptHandle: string) {
+		const queueSettings = this.getQueueARN(queueARN);
 		await this.SQSRequest<{ReceiptHandle:string}, boolean>({
 			ReceiptHandle: receiptHandle
-		}, "DeleteMessage", false);
+		}, "DeleteMessage", queueSettings, false);
 		return true;
 	}
 
-	async deleteMessageBatch (receiptHandles: string[]) {
+	async deleteMessageBatch (queueARN: string, receiptHandles: string[]) {
 		if(!Array.isArray(receiptHandles)){
 			throw new Error("receiptHandles must be an array");
 		}
+		const queueSettings = this.getQueueARN(queueARN);
 		const receiptHandlesData = receiptHandles.map((receiptHandle) => ({
 			Id: randomUUID(),
 			ReceiptHandle: receiptHandle
@@ -154,7 +162,7 @@ export class MiniSQSClient {
 				Entries: { Id: UUID, ReceiptHandle: string }[]
 			}, boolean>({
 				Entries: receiptHandlesData
-			}, "DeleteMessageBatch", false);
+			}, "DeleteMessageBatch", queueSettings,false);
 		}
 		catch (e) {
 			throw new Error(`Error ${e.message}\n Deleting messages: ${JSON.stringify(receiptHandlesData)}`);
@@ -162,8 +170,8 @@ export class MiniSQSClient {
 		return true;
 	}
 
-	async receiveMessage (receiveMessage: ReceiveMessage, clientClass = Client) {
-		const {region, accountId, queueName, host, endpoint} = this.queueSettings;
+	async receiveMessage (queueARN: string, receiveMessage: ReceiveMessage, clientClass = Client) {
+		const {region, accountId, queueName, host, endpoint} = this.getQueueARN(queueARN);
 		const receiveBody = JSON.stringify({
 			...receiveMessage,
 			WaitTimeSeconds: receiveMessage.WaitTimeSeconds > 20 ? 20 : receiveMessage.WaitTimeSeconds
@@ -209,25 +217,27 @@ export class MiniSQSClient {
 		return responseData;
 	}
 
-	async changeMessageVisibility (receiptHandle: string, visibilityTimeout: number) {
+	async changeMessageVisibility (queueARN: string, receiptHandle: string, visibilityTimeout: number) {
+		const queueSettings = this.getQueueARN(queueARN);
 		await this.SQSRequest<{ReceiptHandle:string, VisibilityTimeout: number}, boolean>({
 			ReceiptHandle: receiptHandle,
 			VisibilityTimeout: visibilityTimeout
-		}, "ChangeMessageVisibility", false);
+		}, "ChangeMessageVisibility", queueSettings,false);
 		return true;
 	}
 
-	async changeMessageVisibilityBatch (receiptHandles: string[], visibilityTimeout: number) {
+	async changeMessageVisibilityBatch (queueARN: string, receiptHandles: string[], visibilityTimeout: number) {
 		if(!Array.isArray(receiptHandles)){
 			throw new Error("receiptHandles must be an array");
 		}
+		const queueSettings = this.getQueueARN(queueARN);
 		await this.SQSRequest<{
 			Entries: { Id: UUID, ReceiptHandle: string, VisibilityTimeout: number }[]
 		}, boolean>({Entries: receiptHandles.map((receiptHandle) => ({
 				Id: randomUUID(),
 				ReceiptHandle: receiptHandle,
 				VisibilityTimeout: visibilityTimeout
-			}))}, "ChangeMessageVisibilityBatch", false);
+			}))}, "ChangeMessageVisibilityBatch", queueSettings, false);
 		return true;
 	}
 }

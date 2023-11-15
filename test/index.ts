@@ -14,7 +14,7 @@ test("MiniSQSClient", { only: true }, async (t) => {
 		setGlobalDispatcher(mockAgent);
 		mockAgent.disableNetConnect();
 		const mockPool = mockAgent.get("https://sqs.eu-central-1.amazonaws.com");
-		const client = new MiniSQSClient(queueARN, undefined, {
+		const client = new MiniSQSClient("eu-central-1", undefined, {
 			factory: () => mockPool
 		});
 		t.context = {
@@ -49,13 +49,13 @@ test("MiniSQSClient", { only: true }, async (t) => {
 				return headers["x-amz-target"] === "AmazonSQS.SendMessage";
 			}
 		}).reply(200, mockResponse);
-		const result = await client.sendMessage(message);
+		const result = await client.sendMessage(queueARN, message);
 		t.same(result, mockResponse);
 	});
 
 	await t.test("sendMessage Using signer instance", async (t) => {
 		const { mockPool }  = t.context;
-		const client = new MiniSQSClient(queueARN, undefined, {
+		const client = new MiniSQSClient("eu-central-1", undefined, {
 			factory: () => mockPool
 		}, new Signer());
 		const message: SendMessage = {
@@ -73,12 +73,12 @@ test("MiniSQSClient", { only: true }, async (t) => {
 				return headers["x-amz-target"] === "AmazonSQS.SendMessage";
 			}
 		}).reply(200, mockResponse);
-		const result = await client.sendMessage(message);
+		const result = await client.sendMessage(queueARN,message);
 		t.same(result, mockResponse);
 	});
 	await t.test("sendMessage Using signer options", async (t) => {
 		const { mockPool }  = t.context;
-		const client = new MiniSQSClient(queueARN, undefined, {
+		const client = new MiniSQSClient("eu-central-1", undefined, {
 			factory: () => mockPool
 		}, {minThreads: 1, maxThreads: 1});
 		const message: SendMessage = {
@@ -96,12 +96,12 @@ test("MiniSQSClient", { only: true }, async (t) => {
 				return headers["x-amz-target"] === "AmazonSQS.SendMessage";
 			}
 		}).reply(200, mockResponse);
-		const result = await client.sendMessage(message);
+		const result = await client.sendMessage(queueARN,message);
 		t.same(result, mockResponse);
 	});
 	await t.test("sendMessage and destroy client", async (t) => {
 		const { mockPool }  = t.context;
-		const client = new MiniSQSClient(queueARN, undefined, {
+		const client = new MiniSQSClient("eu-central-1", undefined, {
 			factory: () => mockPool
 		}, new Signer());
 		const message: SendMessage = {
@@ -119,7 +119,7 @@ test("MiniSQSClient", { only: true }, async (t) => {
 				return headers["x-amz-target"] === "AmazonSQS.SendMessage";
 			}
 		}).reply(200, mockResponse);
-		const result = await client.sendMessage(message);
+		const result = await client.sendMessage(queueARN,message);
 		t.same(result, mockResponse);
 		await t.resolves(client.destroy());
 	});
@@ -169,7 +169,7 @@ test("MiniSQSClient", { only: true }, async (t) => {
 				return headers["x-amz-target"] === "AmazonSQS.SendMessageBatch";
 			}
 		}).reply(200, mockResponse);
-		const result = await client.sendMessageBatch(messages);
+		const result = await client.sendMessageBatch(queueARN,messages);
 		t.same(result, mockResponse);
 	});
 
@@ -226,7 +226,7 @@ test("MiniSQSClient", { only: true }, async (t) => {
 			Failed: [],
 			Successful: responsesChunks[1]
 		});
-		const result = await client.sendMessageBatch(messages);
+		const result = await client.sendMessageBatch(queueARN,messages);
 		t.same(result, mockResponse);
 	});
 
@@ -243,7 +243,7 @@ test("MiniSQSClient", { only: true }, async (t) => {
 				return headers["x-amz-target"] === "AmazonSQS.DeleteMessage";
 			}
 		}).reply(200, {});
-		await t.resolves(client.deleteMessage(receiptHandle));
+		await t.resolves(client.deleteMessage(queueARN,receiptHandle));
 	});
 
 	await t.test("deleteMessageBatch", async (t) => {
@@ -264,7 +264,7 @@ test("MiniSQSClient", { only: true }, async (t) => {
 				return headers["x-amz-target"] === "AmazonSQS.DeleteMessageBatch";
 			}
 		}).reply(200, {});
-		await t.resolves(client.deleteMessageBatch(receiptHandles));
+		await t.resolves(client.deleteMessageBatch(queueARN,receiptHandles));
 	});
 
 	await t.test("receiveMessage", async (t) => {
@@ -296,7 +296,7 @@ test("MiniSQSClient", { only: true }, async (t) => {
 			}
 		}
 
-		const messages = await client.receiveMessage({
+		const messages = await client.receiveMessage(queueARN,{
 			WaitTimeSeconds: 20
 		}, MockClientLocal as any);
 		t.same(messages, {
@@ -336,7 +336,7 @@ test("MiniSQSClient", { only: true }, async (t) => {
 			}
 		}
 
-		const messages = await client.receiveMessage({
+		const messages = await client.receiveMessage(queueARN,{
 			WaitTimeSeconds: 50
 		}, MockClientLocal as any);
 		t.same(messages, {
@@ -358,7 +358,7 @@ test("MiniSQSClient", { only: true }, async (t) => {
 				return headers["x-amz-target"] === "AmazonSQS.ChangeMessageVisibility";
 			}
 		}).reply(200, {});
-		await t.resolves(client.changeMessageVisibility(receiptHandle, 30));
+		await t.resolves(client.changeMessageVisibility(queueARN,receiptHandle, 30));
 	});
 
 	await t.test("changeMessageVisibilityBatch", async (t) => {
@@ -381,6 +381,6 @@ test("MiniSQSClient", { only: true }, async (t) => {
 				return headers["x-amz-target"] === "AmazonSQS.ChangeMessageVisibilityBatch";
 			}
 		}).reply(200, {});
-		await t.resolves(client.changeMessageVisibilityBatch(receiptHandles, 30));
+		await t.resolves(client.changeMessageVisibilityBatch(queueARN,receiptHandles, 30));
 	});
 });
