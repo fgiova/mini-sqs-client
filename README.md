@@ -24,9 +24,9 @@ npm install @fgiova/mini-sqs-client
 import {MiniSQSClient} from '@fgiova/mini-sqs-client'
 import console = require("console");
 
-const client = new MiniSQSClient("arn:aws:sqs:eu-central-1:000000000000:test");
+const client = new MiniSQSClient("eu-central-1");
 
-await client.sendMessage({
+await client.sendMessage("arn:aws:sqs:eu-central-1:000000000000:test", {
 	MessageBody: "Hello world",
 	MessageAttributes: {
 		"my-attribute": {
@@ -36,7 +36,7 @@ await client.sendMessage({
 	}
 });
 
-const messages = await client.receiveMessage({
+const messages = await client.receiveMessage("arn:aws:sqs:eu-central-1:000000000000:test", {
 	WaitTimeSeconds: 20,
 	MaxNumberOfMessages: 1,
 	MessageAttributeNames: ["my-attribute"]
@@ -44,27 +44,27 @@ const messages = await client.receiveMessage({
 
 const message = messages[0];
 
-await client.changeMessageVisibility({
+await client.changeMessageVisibility("arn:aws:sqs:eu-central-1:000000000000:test", {
 	ReceiptHandle: message.ReceiptHandle,
 	VisibilityTimeout: 10
 });
 
 console.log(message.Body);
 
-await client.deleteMessage(message.ReceiptHandle);
+await client.deleteMessage("arn:aws:sqs:eu-central-1:000000000000:test", message.ReceiptHandle);
 ```
 
 ## API
 
 ```typescript
-MiniSQSClient(queueARN: string, endpoint?: string, undiciOptions?: Pool.Options, signer?: Signer | SignerOptions)
-MiniSQSClient.sendMessage(message: SendMessage): Promise<SendMessageResult>
-MiniSQSClient.sendMessageBatch(messages: SendMessage[]): Promise<SendMessageBatchResult>
-MiniSQSClient.receiveMessage(options: ReceiveMessage): Promise<ReceiveMessageResult>
-MiniSQSClient.deleteMessage(receiptHandle: string): Promise<boolean>
-MiniSQSClient.deleteMessageBatch(receiptHandles: string[]): Promise<boolean>
-MiniSQSClient.changeMessageVisibility(receiptHandle: string, visibilityTimeout: number): Promise<boolean>
-MiniSQSClient.changeMessageVisibilityBatch(receiptHandles: string[], visibilityTimeout: number): Promise<boolean>
+MiniSQSClient(region: string, endpoint?: string, undiciOptions?: Pool.Options, signer?: Signer | SignerOptions)
+MiniSQSClient.sendMessage(queueARN: string, message: SendMessage): Promise<SendMessageResult>
+MiniSQSClient.sendMessageBatch(queueARN: string, messages: SendMessage[]): Promise<SendMessageBatchResult>
+MiniSQSClient.receiveMessage(queueARN: string, options: ReceiveMessage): Promise<ReceiveMessageResult>
+MiniSQSClient.deleteMessage(queueARN: string, receiptHandle: string): Promise<boolean>
+MiniSQSClient.deleteMessageBatch(queueARN: string, receiptHandles: string[]): Promise<boolean>
+MiniSQSClient.changeMessageVisibility(queueARN: string, receiptHandle: string, visibilityTimeout: number): Promise<boolean>
+MiniSQSClient.changeMessageVisibilityBatch(queueARN: string, receiptHandles: string[], visibilityTimeout: number): Promise<boolean>
 ```
 
 All types are defined in [schemas.ts](./src/schemas.ts) and are derived from the [AWS SQS API](https://docs.aws.amazon.com/AWSSimpleQueueService/latest/APIReference/API_Operations.html) <br />

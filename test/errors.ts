@@ -13,7 +13,7 @@ test("MiniSQSClient Errors", async (t) => {
 		const mockAgent = new MockAgent();
 		mockAgent.disableNetConnect();
 		const mockPool = mockAgent.get("https://sqs.eu-central-1.amazonaws.com");
-		const client = new MiniSQSClient(queueARN, undefined, {
+		const client = new MiniSQSClient("eu-central-1", undefined, {
 			factory: () => mockPool
 		});
 		t.context = {
@@ -39,7 +39,7 @@ test("MiniSQSClient Errors", async (t) => {
 		}).reply(400, {
 			message: "The request was rejected because the specified queue does not exist or you do not have access to it.",
 		});
-		await t.rejects(client.sendMessage(message), Error("The request was rejected because the specified queue does not exist or you do not have access to it."));
+		await t.rejects(client.sendMessage(queueARN,message), Error("The request was rejected because the specified queue does not exist or you do not have access to it."));
 	});
 	await t.test("sendMessage Error without json message", async (t) => {
 		const { mockPool, client }  = t.context;
@@ -53,7 +53,7 @@ test("MiniSQSClient Errors", async (t) => {
 		}).reply(500, {
 			error: "Generic Error",
 		});
-		await t.rejects(client.sendMessage(message), Error(JSON.stringify({
+		await t.rejects(client.sendMessage(queueARN,message), Error(JSON.stringify({
 			error: "Generic Error",
 		})));
 	});
@@ -67,17 +67,17 @@ test("MiniSQSClient Errors", async (t) => {
 			method: "POST",
 			body: JSON.stringify(message),
 		}).reply(500, "Generic Error");
-		await t.rejects(client.sendMessage(message), Error("Generic Error"));
+		await t.rejects(client.sendMessage(queueARN,message), Error("Generic Error"));
 	});
 
 	await t.test("sendMessageBatch Error", async (t) => {
 		const { client }  = t.context;
-		await t.rejects(client.sendMessageBatch({} as any), Error("messages must be an array"));
+		await t.rejects(client.sendMessageBatch(queueARN,{} as any), Error("messages must be an array"));
 	});
 
 	await t.test("deleteMessageBatch Error no array", async (t) => {
 		const { client }  = t.context;
-		await t.rejects(client.deleteMessageBatch(randomUUID() as any), "messages must be an array");
+		await t.rejects(client.deleteMessageBatch(queueARN,randomUUID() as any), "messages must be an array");
 	});
 
 	await t.test("deleteMessageBatch Genreric Error", async (t) => {
@@ -89,7 +89,7 @@ test("MiniSQSClient Errors", async (t) => {
 				return headers["x-amz-target"] === "AmazonSQS.DeleteMessageBatch";
 			}
 		}).reply(500, "Generic Error");
-		await t.rejects(client.deleteMessageBatch([randomUUID()]));
+		await t.rejects(client.deleteMessageBatch(queueARN,[randomUUID()]));
 	});
 
 	await t.test("receiveMessage Error", async (t) => {
@@ -112,13 +112,13 @@ test("MiniSQSClient Errors", async (t) => {
 			}
 		}
 
-		await t.rejects(client.receiveMessage({
+		await t.rejects(client.receiveMessage(queueARN,{
 			WaitTimeSeconds: 20
 		}, MockClientLocal as any));
 	});
 
 	await t.test("changeMessageVisibilityBatch Error no array", async (t) => {
 		const { client }  = t.context;
-		await t.rejects(client.changeMessageVisibilityBatch(randomUUID() as any, 30), "messages must be an array");
+		await t.rejects(client.changeMessageVisibilityBatch(queueARN,randomUUID() as any, 30), "messages must be an array");
 	});
 });
