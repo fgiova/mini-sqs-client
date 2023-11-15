@@ -1,3 +1,5 @@
+# [2.0.0](https://github.com/fgiova/mini-sqs-client/compare/1.0.0...2.0.0) (2023-11-15)
+
 # 1.0.0 (2023-11-10)
 
 
