@@ -32,10 +32,10 @@ export class MiniSQSClient {
 		}
 	}
 
-	async destroy () {
+	async destroy (signer = true) {
 		return Promise.all([
 			this.pool.destroy(),
-			this.signer.destroy()
+			signer && this.signer.destroy() || true
 		]);
 	}
 

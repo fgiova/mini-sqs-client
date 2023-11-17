@@ -55,9 +55,10 @@ test("MiniSQSClient", { only: true }, async (t) => {
 
 	await t.test("sendMessage Using signer instance", async (t) => {
 		const { mockPool }  = t.context;
+		const signer = new Signer();
 		const client = new MiniSQSClient("eu-central-1", undefined, {
 			factory: () => mockPool
-		}, new Signer());
+		}, signer);
 		const message: SendMessage = {
 			MessageBody: "Hello World!"
 		};
@@ -75,6 +76,8 @@ test("MiniSQSClient", { only: true }, async (t) => {
 		}).reply(200, mockResponse);
 		const result = await client.sendMessage(queueARN,message);
 		t.same(result, mockResponse);
+		await t.resolves(client.destroy(false));
+		await t.resolves(signer.destroy());
 	});
 	await t.test("sendMessage Using signer options", async (t) => {
 		const { mockPool }  = t.context;

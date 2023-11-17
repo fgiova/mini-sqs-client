@@ -65,6 +65,7 @@ MiniSQSClient.deleteMessage(queueARN: string, receiptHandle: string): Promise<bo
 MiniSQSClient.deleteMessageBatch(queueARN: string, receiptHandles: string[]): Promise<boolean>
 MiniSQSClient.changeMessageVisibility(queueARN: string, receiptHandle: string, visibilityTimeout: number): Promise<boolean>
 MiniSQSClient.changeMessageVisibilityBatch(queueARN: string, receiptHandles: string[], visibilityTimeout: number): Promise<boolean>
+MiniSQSClient.destroy(signer: boolean): Promise<boolean> // signer destroyer default true
 ```
 
 All types are defined in [schemas.ts](./src/schemas.ts) and are derived from the [AWS SQS API](https://docs.aws.amazon.com/AWSSimpleQueueService/latest/APIReference/API_Operations.html) <br />
