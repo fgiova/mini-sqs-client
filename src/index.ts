@@ -172,9 +172,9 @@ export class MiniSQSClient {
 
 	async receiveMessage (queueARN: string, receiveMessage: ReceiveMessage, clientClass = Client) {
 		const {region, accountId, queueName, host, endpoint} = this.getQueueARN(queueARN);
+		receiveMessage.WaitTimeSeconds = receiveMessage.WaitTimeSeconds > 20 || !receiveMessage.WaitTimeSeconds ? 20 : receiveMessage.WaitTimeSeconds;
 		const receiveBody = JSON.stringify({
-			...receiveMessage,
-			WaitTimeSeconds: receiveMessage.WaitTimeSeconds > 20 ? 20 : receiveMessage.WaitTimeSeconds
+			...receiveMessage
 		});
 		const requestData: HttpRequest = await this.signer.request({
 			method: "POST",
