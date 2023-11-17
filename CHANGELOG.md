@@ -1,3 +1,10 @@
+# [2.1.0](https://github.com/fgiova/mini-sqs-client/compare/2.0.1...2.1.0) (2023-11-17)
+
+
+### Features
+
+* add selective destroyer ([96f2647](https://github.com/fgiova/mini-sqs-client/commit/96f264734267646d37df08efb076439539a8f3c9))
+
 ## [2.0.1](https://github.com/fgiova/mini-sqs-client/compare/2.0.0...2.0.1) (2023-11-17)
 
 
