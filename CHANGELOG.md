@@ -1,3 +1,10 @@
+## [2.0.1](https://github.com/fgiova/mini-sqs-client/compare/2.0.0...2.0.1) (2023-11-17)
+
+
+### Bug Fixes
+
+* fix default time wait on receive command ([874c4f3](https://github.com/fgiova/mini-sqs-client/commit/874c4f3d6aea09a190b926081db7ab1e3a67cd73))
+
 # [2.0.0](https://github.com/fgiova/mini-sqs-client/compare/1.0.0...2.0.0) (2023-11-15)
 
 # 1.0.0 (2023-11-10)
