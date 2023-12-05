@@ -11,7 +11,8 @@
     "lint": "eslint 'src/**/*.ts'",
     "test": "tap",
     "test:debug": "tap --only --timeout=0",
-    "simpletest": "ts-node simpletest.ts"
+    "simpletest": "ts-node simpletest.ts",
+    "test:coverage": "tap --coverage-report=lcovonly --coverage-report=text"
   },
   "repository": {
     "type": "git",
