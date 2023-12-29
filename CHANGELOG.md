@@ -1,3 +1,10 @@
+# [2.2.0](https://github.com/fgiova/mini-sqs-client/compare/2.1.0...2.2.0) (2023-12-29)
+
+
+### Features
+
+* add support for signer singleton ([43db5d5](https://github.com/fgiova/mini-sqs-client/commit/43db5d5669a7e2f87f9633799740cee1f389d7cd))
+
 # [2.1.0](https://github.com/fgiova/mini-sqs-client/compare/2.0.1...2.1.0) (2023-11-17)
 
 
