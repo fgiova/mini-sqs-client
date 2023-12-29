@@ -1,4 +1,4 @@
-import {Signer, SignerOptions, HttpRequest} from "@fgiova/aws-signature";
+import {Signer, SignerSingleton, SignerOptions, HttpRequest} from "@fgiova/aws-signature";
 import {Client, Pool} from "undici";
 import {randomUUID, UUID} from "crypto";
 import type {
@@ -28,7 +28,7 @@ export class MiniSQSClient {
 			this.signer = new Signer(signer);
 		}
 		else {
-			this.signer = new Signer();
+			this.signer = SignerSingleton.getSigner();
 		}
 	}
 
