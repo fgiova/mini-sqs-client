@@ -1,3 +1,10 @@
+## [2.2.1](https://github.com/fgiova/mini-sqs-client/compare/2.2.0...2.2.1) (2023-12-31)
+
+
+### Bug Fixes
+
+* fix default destroy signer to false if signer is a singleton ([4850274](https://github.com/fgiova/mini-sqs-client/commit/4850274bf57a2c8f59e10354642253b540214e4c))
+
 # [2.2.0](https://github.com/fgiova/mini-sqs-client/compare/2.1.0...2.2.0) (2023-12-29)
 
 
