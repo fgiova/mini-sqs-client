@@ -15,6 +15,7 @@ export class MiniSQSClient {
 	private readonly signer: Signer;
 	private region: string;
 	private endpoint: string;
+	private defaultDestroySigner = true;
 
 	constructor (region: string, endpoint?: string, undiciOptions?: Pool.Options, signer?: Signer | SignerOptions) {
 		this.undiciOptions = undiciOptions;
@@ -28,11 +29,12 @@ export class MiniSQSClient {
 			this.signer = new Signer(signer);
 		}
 		else {
+			this.defaultDestroySigner = false;
 			this.signer = SignerSingleton.getSigner();
 		}
 	}
 
-	async destroy (signer = true) {
+	async destroy (signer: boolean = this.defaultDestroySigner) {
 		return Promise.all([
 			this.pool.destroy(),
 			signer && this.signer.destroy() || true
