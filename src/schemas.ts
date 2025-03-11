@@ -649,6 +649,7 @@ export interface ReceiveMessage {
 	 *             </li>
 	 *          </ul>
 	 */
+	// eslint-disable-next-line @typescript-eslint/no-redundant-type-constituents
 	AttributeNames?: (QueueAttributeName | string)[];
 
 	/**

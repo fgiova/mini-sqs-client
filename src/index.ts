@@ -18,7 +18,8 @@ export class MiniSQSClient {
 	private defaultDestroySigner = true;
 
 	constructor (region: string, endpoint?: string, undiciOptions?: Pool.Options, signer?: Signer | SignerOptions) {
-		this.undiciOptions = undiciOptions;
+		/* c8 ignore next 1 */
+		this.undiciOptions = undiciOptions || {};
 		this.region = region;
 		this.endpoint = endpoint ?? `https://sqs.${region}.amazonaws.com`;
 		this.pool = new Pool(this.endpoint, undiciOptions);
@@ -52,7 +53,7 @@ export class MiniSQSClient {
 			queueName,
 			host: url.host,
 			endpoint
-		}
+		};
 	}
 	private async SQSRequest<B,R>(body: B, target: SQSTarget, queueSettings: {
 		region: string,
@@ -103,7 +104,7 @@ export class MiniSQSClient {
 
 	private splitArrayMessages (messages: any[], maxItems = 10){
 		return messages.reduce((resultArray, item, index) => {
-			const chunkIndex = Math.floor(index/10);
+			const chunkIndex = Math.floor(index/maxItems);
 			if(!item.Id) item.Id = randomUUID();
 			if(!resultArray[chunkIndex]) {
 				resultArray[chunkIndex] = []; // start a new chunk
@@ -166,7 +167,7 @@ export class MiniSQSClient {
 				Entries: receiptHandlesData
 			}, "DeleteMessageBatch", queueSettings,false);
 		}
-		catch (e) {
+		catch (e: any) {
 			throw new Error(`Error ${e.message}\n Deleting messages: ${JSON.stringify(receiptHandlesData)}`);
 		}
 		return true;
@@ -174,7 +175,7 @@ export class MiniSQSClient {
 
 	async receiveMessage (queueARN: string, receiveMessage: ReceiveMessage, clientClass = Client) {
 		const {region, accountId, queueName, host, endpoint} = this.getQueueARN(queueARN);
-		receiveMessage.WaitTimeSeconds = receiveMessage.WaitTimeSeconds > 20 || !receiveMessage.WaitTimeSeconds ? 20 : receiveMessage.WaitTimeSeconds;
+		receiveMessage.WaitTimeSeconds = Number(receiveMessage.WaitTimeSeconds) > 20 || !receiveMessage.WaitTimeSeconds ? 20 : receiveMessage.WaitTimeSeconds;
 		const receiveBody = JSON.stringify({
 			...receiveMessage
 		});
@@ -236,10 +237,10 @@ export class MiniSQSClient {
 		await this.SQSRequest<{
 			Entries: { Id: UUID, ReceiptHandle: string, VisibilityTimeout: number }[]
 		}, boolean>({Entries: receiptHandles.map((receiptHandle) => ({
-				Id: randomUUID(),
-				ReceiptHandle: receiptHandle,
-				VisibilityTimeout: visibilityTimeout
-			}))}, "ChangeMessageVisibilityBatch", queueSettings, false);
+			Id: randomUUID(),
+			ReceiptHandle: receiptHandle,
+			VisibilityTimeout: visibilityTimeout
+		}))}, "ChangeMessageVisibilityBatch", queueSettings, false);
 		return true;
 	}
 }
