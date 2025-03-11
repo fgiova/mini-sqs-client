@@ -1,3 +1,10 @@
+## [3.0.1](https://github.com/fgiova/mini-sqs-client/compare/3.0.0...3.0.1) (2025-03-11)
+
+
+### Bug Fixes
+
+* Emit types declarations ([b5ea3c2](https://github.com/fgiova/mini-sqs-client/commit/b5ea3c2e561fe0a652a9f1c4103f090e6ebbae66))
+
 # [3.0.0](https://github.com/fgiova/mini-sqs-client/compare/2.2.1...3.0.0) (2025-03-11)
 
 
