@@ -1,3 +1,10 @@
+# [3.0.0](https://github.com/fgiova/mini-sqs-client/compare/2.2.1...3.0.0) (2025-03-11)
+
+
+### Features
+
+* Add ESM export ([34ff057](https://github.com/fgiova/mini-sqs-client/commit/34ff05794ecbc909e5071f84be7b4c859501caba))
+
 ## [2.2.1](https://github.com/fgiova/mini-sqs-client/compare/2.2.0...2.2.1) (2023-12-31)
 
 
