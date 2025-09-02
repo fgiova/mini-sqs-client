@@ -1,3 +1,10 @@
+# [3.1.0](https://github.com/fgiova/mini-sqs-client/compare/3.0.1...3.1.0) (2025-09-02)
+
+
+### Features
+
+* update dependencies ([e5fe067](https://github.com/fgiova/mini-sqs-client/commit/e5fe0679ec9eaf6dd3b2d938fd8fa2b5e5941b5f))
+
 ## [3.0.1](https://github.com/fgiova/mini-sqs-client/compare/3.0.0...3.0.1) (2025-03-11)
 
 
