@@ -1,16 +1,18 @@
-export type SQSTarget =  "SendMessage" |
-	"SendMessageBatch" |
-	"DeleteMessage" |
-	"DeleteMessageBatch" |
-	"ReceiveMessage" |
-	"ChangeMessageVisibility" |
-	"ChangeMessageVisibilityBatch";
+export type SQSTarget =
+	| "SendMessage"
+	| "SendMessageBatch"
+	| "DeleteMessage"
+	| "DeleteMessageBatch"
+	| "ReceiveMessage"
+	| "ChangeMessageVisibility"
+	| "ChangeMessageVisibilityBatch";
 
 export const QueueAttributeName = {
 	All: "All",
 	ApproximateNumberOfMessages: "ApproximateNumberOfMessages",
 	ApproximateNumberOfMessagesDelayed: "ApproximateNumberOfMessagesDelayed",
-	ApproximateNumberOfMessagesNotVisible: "ApproximateNumberOfMessagesNotVisible",
+	ApproximateNumberOfMessagesNotVisible:
+		"ApproximateNumberOfMessagesNotVisible",
 	ContentBasedDeduplication: "ContentBasedDeduplication",
 	CreatedTimestamp: "CreatedTimestamp",
 	DeduplicationScope: "DeduplicationScope",
@@ -31,7 +33,8 @@ export const QueueAttributeName = {
 	VisibilityTimeout: "VisibilityTimeout",
 } as const;
 
-export type QueueAttributeName = (typeof QueueAttributeName)[keyof typeof QueueAttributeName];
+export type QueueAttributeName =
+	(typeof QueueAttributeName)[keyof typeof QueueAttributeName];
 
 export interface MessageAttributeValue {
 	/**
@@ -165,7 +168,6 @@ export interface MessageSystemAttributeValue {
 	DataType: "String" | "Number" | "Binary";
 }
 export interface SendMessage {
-
 	/**
 	 * <p>The message to send. The minimum size is one character. The maximum size is 256
 	 *             KiB.</p>
@@ -573,7 +575,6 @@ export interface SendMessageBatchResult {
 }
 
 export interface ReceiveMessage {
-
 	/**
 	 * <p>A list of attributes that need to be returned along with each message. These
 	 *             attributes include:</p>
