@@ -1,3 +1,10 @@
+# [3.2.0](https://github.com/fgiova/mini-sqs-client/compare/3.1.0...3.2.0) (2025-09-02)
+
+
+### Features
+
+* update @fgiova/aws-signature ([73c3011](https://github.com/fgiova/mini-sqs-client/commit/73c30111475ad9efa43aca10bc53cf5eb480e2a9))
+
 # [3.1.0](https://github.com/fgiova/mini-sqs-client/compare/3.0.1...3.1.0) (2025-09-02)
 
 
