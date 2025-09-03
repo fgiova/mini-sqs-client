@@ -1,3 +1,10 @@
+## [3.2.1](https://github.com/fgiova/mini-sqs-client/compare/3.2.0...3.2.1) (2025-09-03)
+
+
+### Bug Fixes
+
+* fix cjs exports ([09f6314](https://github.com/fgiova/mini-sqs-client/commit/09f63141c336cfbb59eaaf8ee2677eaede6fed63))
+
 # [3.2.0](https://github.com/fgiova/mini-sqs-client/compare/3.1.0...3.2.0) (2025-09-02)
 
 
