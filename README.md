@@ -3,7 +3,7 @@
 [![NPM version](https://img.shields.io/npm/v/@fgiova/mini-sqs-client.svg?style=flat)](https://www.npmjs.com/package/@fgiova/mini-sqs-client)
 ![CI workflow](https://github.com/fgiova/mini-sqs-client/actions/workflows/node.js.yml/badge.svg)
 [![TypeScript](https://img.shields.io/badge/%3C%2F%3E-TypeScript-%230074c1.svg)](http://www.typescriptlang.org/)
-[![Maintainability](https://qlty.sh/gh/fgiova/projects/mini-sns-client/maintainability.svg)](https://qlty.sh/gh/fgiova/projects/mini-sns-client)
+[![Linted with Biome](https://img.shields.io/badge/Linted_with-Biome-60a5fa?style=flat&logo=biome)](https://biomejs.dev)[![Maintainability](https://qlty.sh/gh/fgiova/projects/mini-sns-client/maintainability.svg)](https://qlty.sh/gh/fgiova/projects/mini-sns-client)
 [![Code Coverage](https://qlty.sh/gh/fgiova/projects/mini-sns-client/coverage.svg)](https://qlty.sh/gh/fgiova/projects/mini-sns-client)
 
 ## Description

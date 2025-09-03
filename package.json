@@ -51,7 +51,7 @@
 		"show-full-coverage": true
 	},
 	"dependencies": {
-		"@fgiova/aws-signature": "^3.1.0",
+		"@fgiova/aws-signature": "^3.1.2",
 		"undici": "^7.15.0"
 	},
 	"devDependencies": {
