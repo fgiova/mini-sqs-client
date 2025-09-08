@@ -12,10 +12,12 @@ import {
 	setGlobalDispatcher,
 } from "undici";
 import {
+	type BatchResultErrorEntry,
 	MiniSQSClient,
 	type SendMessage,
 	type SendMessageBatchItem,
 	type SendMessageBatchResult,
+	type SendMessageBatchResultEntry,
 	type SendMessageResult,
 } from "../src";
 
@@ -241,10 +243,13 @@ test("MiniSQSClient", { only: true }, async (t) => {
 
 		const { mockPool, client } = t.context;
 		const messages = [] as SendMessageBatchItem[];
-		const mockResponse: SendMessageBatchResult = {
+		const mockResponse: {
+			Successful: SendMessageBatchResultEntry[];
+			Failed: BatchResultErrorEntry[];
+		} = {
 			Failed: [],
 			Successful: [],
-		} as SendMessageBatchResult;
+		};
 		for (let i = 0; i < 15; i++) {
 			const message: SendMessageBatchItem = {
 				Id: randomUUID(),
