@@ -1,3 +1,10 @@
+# [3.4.0](https://github.com/fgiova/mini-sqs-client/compare/3.3.0...3.4.0) (2025-09-08)
+
+
+### Features
+
+* implement globalDispatcher as client when is a MockAgent ([cb5d3d5](https://github.com/fgiova/mini-sqs-client/commit/cb5d3d5552e894fd504956879c81922142eedadc))
+
 # [3.3.0](https://github.com/fgiova/mini-sqs-client/compare/3.2.2...3.3.0) (2025-09-08)
 
 
