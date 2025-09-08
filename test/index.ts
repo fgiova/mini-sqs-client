@@ -7,6 +7,7 @@ import { createHash, randomUUID } from "node:crypto";
 import { Signer } from "@fgiova/aws-signature";
 import {
 	type Client,
+	getGlobalDispatcher,
 	MockAgent,
 	MockClient,
 	setGlobalDispatcher,
@@ -374,6 +375,50 @@ test("MiniSQSClient", { only: true }, async (t) => {
 			},
 			MockClientLocal,
 		);
+		t.same(messages, {
+			Messages: messagesData,
+		});
+	});
+	await t.test("receiveMessage with Mocks", async (t) => {
+		const { mockAgent } = t.context;
+
+		const messagesData = [
+			{
+				Body: "Hello World!",
+				ReceiptHandle: randomUUID(),
+				MessageId: randomUUID(),
+			},
+		];
+
+		const currentGlobalDispatcher = getGlobalDispatcher();
+		t.teardown(() => {
+			setGlobalDispatcher(currentGlobalDispatcher);
+		});
+
+		setGlobalDispatcher(mockAgent);
+		const clientMock = mockAgent.get("https://sqs.eu-south-1.amazonaws.com");
+
+		clientMock
+			.intercept({
+				path: "/000000000000/test/",
+				method: "POST",
+				headers: (headers: Record<string, string>) => {
+					return headers["x-amz-target"] === "AmazonSQS.ReceiveMessage";
+				},
+			})
+			.reply(200, {
+				Messages: messagesData,
+			});
+
+		const client = new MiniSQSClient("eu-south-1");
+
+		const messages = await client.receiveMessage(
+			"arn:aws:sqs:eu-south-1:000000000000:test",
+			{
+				WaitTimeSeconds: 20,
+			},
+		);
+
 		t.same(messages, {
 			Messages: messagesData,
 		});

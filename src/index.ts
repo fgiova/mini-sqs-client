@@ -5,7 +5,13 @@ import {
 	type SignerOptions,
 	SignerSingleton,
 } from "@fgiova/aws-signature";
-import { Client, Pool } from "undici";
+import Undici, {
+	Client,
+	type Dispatcher,
+	getGlobalDispatcher,
+	MockAgent,
+	Pool,
+} from "undici";
 import type {
 	ReceiveMessage,
 	ReceiveMessageResult,
@@ -17,11 +23,11 @@ import type {
 } from "./schemas";
 
 export class MiniSQSClient {
-	private readonly pool: Pool;
+	private readonly pool: Pool | Dispatcher;
 	private readonly undiciOptions: Pool.Options;
 	private readonly signer: Signer;
-	private region: string;
-	private endpoint: string;
+	private readonly region: string;
+	private readonly endpoint: string;
 	private defaultDestroySigner = true;
 
 	constructor(
@@ -34,7 +40,12 @@ export class MiniSQSClient {
 		this.undiciOptions = undiciOptions || {};
 		this.region = region;
 		this.endpoint = endpoint ?? `https://sqs.${region}.amazonaws.com`;
-		this.pool = new Pool(this.endpoint, undiciOptions);
+		const globalDispatcher = getGlobalDispatcher();
+		this.pool =
+			globalDispatcher instanceof MockAgent
+				? (globalDispatcher as MockAgent).get(this.endpoint)
+				: new Pool(this.endpoint, undiciOptions);
+
 		if (signer instanceof Signer) {
 			this.signer = signer;
 		} else if (signer) {
@@ -66,6 +77,7 @@ export class MiniSQSClient {
 			endpoint,
 		};
 	}
+
 	private async SQSRequest<B, R>(
 		body: B,
 		target: SQSTarget,
@@ -223,7 +235,7 @@ export class MiniSQSClient {
 	async receiveMessage(
 		queueARN: string,
 		receiveMessage: ReceiveMessage,
-		clientClass = Client,
+		clientClass?: { prototype: Client; new (): Client },
 	) {
 		const { region, accountId, queueName, host, endpoint } =
 			this.getQueueARN(queueARN);
@@ -251,15 +263,23 @@ export class MiniSQSClient {
 
 		const timeout = receiveMessage.WaitTimeSeconds * 1000 + 1000;
 
-		const client = new clientClass(endpoint, {
-			...this.undiciOptions,
-			connect: {
-				...this.undiciOptions?.connect,
-				timeout: timeout,
-			},
-			bodyTimeout: timeout,
-			keepAliveMaxTimeout: 21_000,
-		});
+		/* c8 ignore next 1 */
+		const clientClassConstructor = clientClass || Client;
+
+		const globalDispatcher = getGlobalDispatcher();
+
+		const client =
+			globalDispatcher instanceof MockAgent && !clientClass
+				? (globalDispatcher as MockAgent).get(this.endpoint)
+				: new clientClassConstructor(endpoint, {
+						...this.undiciOptions,
+						connect: {
+							...this.undiciOptions?.connect,
+							timeout: timeout,
+						},
+						bodyTimeout: timeout,
+						keepAliveMaxTimeout: 21_000,
+					});
 
 		const response = await client.request({
 			path: `/${accountId}/${queueName}/`,
@@ -334,4 +354,5 @@ export class MiniSQSClient {
 		return true;
 	}
 }
+
 export type * from "./schemas";
