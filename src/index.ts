@@ -5,7 +5,7 @@ import {
 	type SignerOptions,
 	SignerSingleton,
 } from "@fgiova/aws-signature";
-import Undici, {
+import {
 	Client,
 	type Dispatcher,
 	getGlobalDispatcher,
@@ -29,6 +29,7 @@ export class MiniSQSClient {
 	private readonly region: string;
 	private readonly endpoint: string;
 	private defaultDestroySigner = true;
+	private receiveMessageClientCache: Record<string, Client> = {};
 
 	constructor(
 		region: string,
@@ -57,10 +58,15 @@ export class MiniSQSClient {
 	}
 
 	async destroy(signer: boolean = this.defaultDestroySigner) {
-		return Promise.all([
+		const result = await Promise.all([
 			this.pool.destroy(),
 			(signer && this.signer.destroy()) || true,
+			...Object.keys(this.receiveMessageClientCache).map((key) =>
+				this.receiveMessageClientCache[key].destroy(),
+			),
 		]);
+		this.receiveMessageClientCache = {};
+		return result;
 	}
 
 	private getQueueARN(queueARN: string) {
@@ -131,7 +137,11 @@ export class MiniSQSClient {
 			}
 			throw Error(message);
 		}
-		return (JSONResponse ? await response.body.json() : true) as R;
+		if (JSONResponse) {
+			return (await response.body.json()) as R;
+		}
+		await response.body.dump();
+		return true as R;
 	}
 
 	// biome-ignore lint/suspicious/noExplicitAny: messages can be any
@@ -232,21 +242,57 @@ export class MiniSQSClient {
 		return true;
 	}
 
+	private receiveMessageClient(
+		timeout: number,
+		clientClass?: {
+			prototype: Client;
+			new (): Client;
+		},
+	) {
+		/* c8 ignore next 1 */
+		const clientClassConstructor = clientClass || Client;
+		const clientClassCacheName = `${clientClassConstructor.name}-${timeout}`;
+
+		if (this.receiveMessageClientCache[clientClassCacheName]) {
+			return this.receiveMessageClientCache[clientClassCacheName];
+		}
+
+		const globalDispatcher = getGlobalDispatcher();
+
+		if (globalDispatcher instanceof MockAgent && !clientClass) {
+			return (globalDispatcher as MockAgent).get(this.endpoint);
+		}
+
+		this.receiveMessageClientCache[clientClassCacheName] =
+			new clientClassConstructor(this.endpoint, {
+				...this.undiciOptions,
+				connect: {
+					...this.undiciOptions?.connect,
+					timeout: timeout,
+				},
+				bodyTimeout: timeout,
+				keepAliveMaxTimeout: 21_000,
+			});
+
+		return this.receiveMessageClientCache[clientClassCacheName];
+	}
+
 	async receiveMessage(
 		queueARN: string,
 		receiveMessage: ReceiveMessage,
 		clientClass?: { prototype: Client; new (): Client },
 	) {
-		const { region, accountId, queueName, host, endpoint } =
-			this.getQueueARN(queueARN);
+		const { region, accountId, queueName, host } = this.getQueueARN(queueARN);
 		receiveMessage.WaitTimeSeconds =
 			Number(receiveMessage.WaitTimeSeconds) > 20 ||
 			!receiveMessage.WaitTimeSeconds
 				? 20
 				: receiveMessage.WaitTimeSeconds;
+
 		const receiveBody = JSON.stringify({
 			...receiveMessage,
 		});
+
 		const requestData: HttpRequest = await this.signer.request(
 			{
 				method: "POST",
@@ -263,23 +309,7 @@ export class MiniSQSClient {
 
 		const timeout = receiveMessage.WaitTimeSeconds * 1000 + 1000;
 
-		/* c8 ignore next 1 */
-		const clientClassConstructor = clientClass || Client;
-
-		const globalDispatcher = getGlobalDispatcher();
-
-		const client =
-			globalDispatcher instanceof MockAgent && !clientClass
-				? (globalDispatcher as MockAgent).get(this.endpoint)
-				: new clientClassConstructor(endpoint, {
-						...this.undiciOptions,
-						connect: {
-							...this.undiciOptions?.connect,
-							timeout: timeout,
-						},
-						bodyTimeout: timeout,
-						keepAliveMaxTimeout: 21_000,
-					});
+		const client = this.receiveMessageClient(timeout, clientClass);
 
 		const response = await client.request({
 			path: `/${accountId}/${queueName}/`,
@@ -290,14 +320,13 @@ export class MiniSQSClient {
 				...requestData.headers,
 			},
 			body: receiveBody,
+			bodyTimeout: timeout,
 		});
+
 		if (response.statusCode !== 200) {
 			throw Error(await response.body.text());
 		}
-		const responseData = (await response.body.json()) as ReceiveMessageResult;
-
-		await client.close();
-		return responseData;
+		return (await response.body.json()) as ReceiveMessageResult;
 	}
 
 	async changeMessageVisibility(
