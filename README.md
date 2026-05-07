@@ -79,3 +79,4 @@ The main difference is that batch operations are not limited to 10 items, but ac
 
 ## License
 Licensed under [MIT](./LICENSE).
+

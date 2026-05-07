@@ -5,13 +5,7 @@ process.env.AWS_SECRET_ACCESS_KEY = "bar";
 
 import { createHash, randomUUID } from "node:crypto";
 import { Signer } from "@fgiova/aws-signature";
-import {
-	type Client,
-	getGlobalDispatcher,
-	MockAgent,
-	MockClient,
-	setGlobalDispatcher,
-} from "undici";
+import { getGlobalDispatcher, MockAgent, setGlobalDispatcher } from "undici";
 import {
 	type BatchResultErrorEntry,
 	MiniSQSClient,
@@ -341,7 +335,7 @@ test("MiniSQSClient", { only: true }, async (t) => {
 	});
 
 	await t.test("receiveMessage", async (t) => {
-		const { mockAgent, client } = t.context;
+		const { mockPool, client } = t.context;
 		const messagesData = [
 			{
 				Body: "Hello World!",
@@ -349,38 +343,27 @@ test("MiniSQSClient", { only: true }, async (t) => {
 				MessageId: randomUUID(),
 			},
 		];
-		class MockClientLocal extends MockClient {
-			constructor(endpoint: string, options: Client.Options) {
-				super(endpoint, {
-					...options,
-					agent: mockAgent,
-				});
+		mockPool
+			.intercept({
+				path: "/000000000000/test/",
+				method: "POST",
+				headers: (headers: Record<string, string>) => {
+					return headers["x-amz-target"] === "AmazonSQS.ReceiveMessage";
+				},
+			})
+			.reply(200, {
+				Messages: messagesData,
+			});
 
-				this.intercept({
-					path: "/000000000000/test/",
-					method: "POST",
-					headers: (headers: Record<string, string>) => {
-						return headers["x-amz-target"] === "AmazonSQS.ReceiveMessage";
-					},
-				}).reply(200, {
-					Messages: messagesData,
-				});
-			}
-		}
-
-		const messages = await client.receiveMessage(
-			queueARN,
-			{
-				WaitTimeSeconds: 20,
-			},
-			MockClientLocal,
-		);
+		const messages = await client.receiveMessage(queueARN, {
+			WaitTimeSeconds: 20,
+		});
 		t.same(messages, {
 			Messages: messagesData,
 		});
 	});
-	await t.test("receiveMessage cached client", async (t) => {
-		const { mockAgent, client } = t.context;
+	await t.test("receiveMessage repeated calls", async (t) => {
+		const { mockPool, client } = t.context;
 		const messagesData = [
 			{
 				Body: "Hello World!",
@@ -388,43 +371,27 @@ test("MiniSQSClient", { only: true }, async (t) => {
 				MessageId: randomUUID(),
 			},
 		];
-		class MockClientLocal extends MockClient {
-			constructor(endpoint: string, options: Client.Options) {
-				super(endpoint, {
-					...options,
-					agent: mockAgent,
-				});
+		mockPool
+			.intercept({
+				path: "/000000000000/test/",
+				method: "POST",
+				headers: (headers: Record<string, string>) => {
+					return headers["x-amz-target"] === "AmazonSQS.ReceiveMessage";
+				},
+			})
+			.reply(200, {
+				Messages: messagesData,
+			})
+			.times(2);
 
-				this.intercept({
-					path: "/000000000000/test/",
-					method: "POST",
-					headers: (headers: Record<string, string>) => {
-						return headers["x-amz-target"] === "AmazonSQS.ReceiveMessage";
-					},
-				})
-					.reply(200, {
-						Messages: messagesData,
-					})
-					.times(2);
-			}
-		}
-
-		const first = await client.receiveMessage(
-			queueARN,
-			{
-				WaitTimeSeconds: 20,
-			},
-			MockClientLocal,
-		);
+		const first = await client.receiveMessage(queueARN, {
+			WaitTimeSeconds: 20,
+		});
 		t.same(first, { Messages: messagesData });
 
-		const second = await client.receiveMessage(
-			queueARN,
-			{
-				WaitTimeSeconds: 20,
-			},
-			MockClientLocal,
-		);
+		const second = await client.receiveMessage(queueARN, {
+			WaitTimeSeconds: 20,
+		});
 		t.same(second, { Messages: messagesData });
 	});
 	await t.test("receiveMessage with Mocks", async (t) => {
@@ -472,7 +439,7 @@ test("MiniSQSClient", { only: true }, async (t) => {
 		});
 	});
 	await t.test("receiveMessage cap waitTime", async (t) => {
-		const { mockAgent, client } = t.context;
+		const { mockPool, client } = t.context;
 		const messagesData = [
 			{
 				Body: "Hello World!",
@@ -480,36 +447,25 @@ test("MiniSQSClient", { only: true }, async (t) => {
 				MessageId: randomUUID(),
 			},
 		];
-		class MockClientLocal extends MockClient {
-			constructor(endpoint: string, options: Client.Options) {
-				super(endpoint, {
-					...options,
-					agent: mockAgent,
-				});
+		mockPool
+			.intercept({
+				path: "/000000000000/test/",
+				method: "POST",
+				headers: (headers: Record<string, string>) => {
+					return headers["x-amz-target"] === "AmazonSQS.ReceiveMessage";
+				},
+				body: (body: string) => {
+					const bodyData = JSON.parse(body);
+					return bodyData.WaitTimeSeconds === 20;
+				},
+			})
+			.reply(200, {
+				Messages: messagesData,
+			});
 
-				this.intercept({
-					path: "/000000000000/test/",
-					method: "POST",
-					headers: (headers: Record<string, string>) => {
-						return headers["x-amz-target"] === "AmazonSQS.ReceiveMessage";
-					},
-					body: (body: string) => {
-						const bodyData = JSON.parse(body);
-						return bodyData.WaitTimeSeconds === 20;
-					},
-				}).reply(200, {
-					Messages: messagesData,
-				});
-			}
-		}
-
-		const messages = await client.receiveMessage(
-			queueARN,
-			{
-				WaitTimeSeconds: 50,
-			},
-			MockClientLocal,
-		);
+		const messages = await client.receiveMessage(queueARN, {
+			WaitTimeSeconds: 50,
+		});
 		t.same(messages, {
 			Messages: messagesData,
 		});

@@ -5,7 +5,7 @@ process.env.AWS_SECRET_ACCESS_KEY = "bar";
 process.env.AWS_REGION = "eu-central-1";
 
 import { randomUUID } from "node:crypto";
-import { type Client, MockAgent, MockClient } from "undici";
+import { MockAgent } from "undici";
 import { MiniSQSClient, type SendMessage } from "../src";
 
 const queueARN = "arn:aws:sqs:eu-central-1:000000000000:test";
@@ -133,32 +133,21 @@ test("MiniSQSClient Errors", async (t) => {
 	});
 
 	await t.test("receiveMessage Error", async (t) => {
-		const { mockAgent, client } = t.context;
-		class MockClientLocal extends MockClient {
-			constructor(endpoint: string, options: Client.Options) {
-				super(endpoint, {
-					...options,
-					agent: mockAgent,
-				});
-
-				this.intercept({
-					path: "/000000000000/test/",
-					method: "POST",
-					headers: (headers: Record<string, string>) => {
-						return headers["x-amz-target"] === "AmazonSQS.ReceiveMessage";
-					},
-				}).reply(500, "Generic Error");
-			}
-		}
+		const { mockPool, client } = t.context;
+		mockPool
+			.intercept({
+				path: "/000000000000/test/",
+				method: "POST",
+				headers: (headers: Record<string, string>) => {
+					return headers["x-amz-target"] === "AmazonSQS.ReceiveMessage";
+				},
+			})
+			.reply(500, "Generic Error");
 
 		await t.rejects(
-			client.receiveMessage(
-				queueARN,
-				{
-					WaitTimeSeconds: 20,
-				},
-				MockClientLocal,
-			),
+			client.receiveMessage(queueARN, {
+				WaitTimeSeconds: 20,
+			}),
 		);
 	});
 
