@@ -29,7 +29,7 @@ export class MiniSQSClient {
 	private readonly region: string;
 	private readonly endpoint: string;
 	private defaultDestroySigner = true;
-	private receiveMessageClientCache: Record<string, Client> = {};
+	private receiveMessageClientCache: Map<number, Client> = new Map();
 
 	constructor(
 		region: string,
@@ -45,7 +45,10 @@ export class MiniSQSClient {
 		this.pool =
 			globalDispatcher instanceof MockAgent
 				? (globalDispatcher as MockAgent).get(this.endpoint)
-				: new Pool(this.endpoint, undiciOptions);
+				: new Pool(this.endpoint, {
+						...undiciOptions,
+						clientTtl: 60 * 60 * 1000,
+					});
 
 		if (signer instanceof Signer) {
 			this.signer = signer;
@@ -61,12 +64,36 @@ export class MiniSQSClient {
 		const result = await Promise.all([
 			this.pool.destroy(),
 			(signer && this.signer.destroy()) || true,
-			...Object.keys(this.receiveMessageClientCache).map((key) =>
-				this.receiveMessageClientCache[key].destroy(),
+			...Array.from(this.receiveMessageClientCache.values()).map((client) =>
+				client.destroy(),
 			),
 		]);
-		this.receiveMessageClientCache = {};
+		this.receiveMessageClientCache.clear();
 		return result;
+	}
+
+	private async readText(
+		body: Dispatcher.ResponseData["body"],
+	): Promise<string> {
+		try {
+			return await body.text();
+		} catch (err) {
+			try {
+				await body.dump();
+			} catch {}
+			throw err;
+		}
+	}
+
+	private async readJson<T>(body: Dispatcher.ResponseData["body"]): Promise<T> {
+		try {
+			return (await body.json()) as T;
+		} catch (err) {
+			try {
+				await body.dump();
+			} catch {}
+			throw err;
+		}
 	}
 
 	private getQueueARN(queueARN: string) {
@@ -125,7 +152,7 @@ export class MiniSQSClient {
 			body: requestBody,
 		});
 		if (response.statusCode !== 200) {
-			let message = await response.body.text();
+			let message = await this.readText(response.body);
 			try {
 				const parsedBody = JSON.parse(message);
 				if (parsedBody.message) {
@@ -138,7 +165,7 @@ export class MiniSQSClient {
 			throw Error(message);
 		}
 		if (JSONResponse) {
-			return (await response.body.json()) as R;
+			return await this.readJson<R>(response.body);
 		}
 		await response.body.dump();
 		return true as R;
@@ -242,46 +269,29 @@ export class MiniSQSClient {
 		return true;
 	}
 
-	private receiveMessageClient(
-		timeout: number,
-		clientClass?: {
-			prototype: Client;
-			new (): Client;
-		},
-	) {
-		/* c8 ignore next 1 */
-		const clientClassConstructor = clientClass || Client;
-		const clientClassCacheName = `${clientClassConstructor.name}-${timeout}`;
-
-		if (this.receiveMessageClientCache[clientClassCacheName]) {
-			return this.receiveMessageClientCache[clientClassCacheName];
-		}
-
+	private receiveMessageClient(timeout: number) {
 		const globalDispatcher = getGlobalDispatcher();
-
-		if (globalDispatcher instanceof MockAgent && !clientClass) {
+		if (globalDispatcher instanceof MockAgent) {
 			return (globalDispatcher as MockAgent).get(this.endpoint);
 		}
 
-		this.receiveMessageClientCache[clientClassCacheName] =
-			new clientClassConstructor(this.endpoint, {
-				...this.undiciOptions,
-				connect: {
-					...this.undiciOptions?.connect,
-					timeout: timeout,
-				},
-				bodyTimeout: timeout,
-				keepAliveMaxTimeout: 21_000,
-			});
+		const cached = this.receiveMessageClientCache.get(timeout);
+		if (cached) return cached;
 
-		return this.receiveMessageClientCache[clientClassCacheName];
+		const client = new Client(this.endpoint, {
+			...this.undiciOptions,
+			connect: {
+				...this.undiciOptions?.connect,
+				timeout: timeout,
+			},
+			bodyTimeout: timeout,
+			keepAliveMaxTimeout: 21_000,
+		});
+		this.receiveMessageClientCache.set(timeout, client);
+		return client;
 	}
 
-	async receiveMessage(
-		queueARN: string,
-		receiveMessage: ReceiveMessage,
-		clientClass?: { prototype: Client; new (): Client },
-	) {
+	async receiveMessage(queueARN: string, receiveMessage: ReceiveMessage) {
 		const { region, accountId, queueName, host } = this.getQueueARN(queueARN);
 		receiveMessage.WaitTimeSeconds =
 			Number(receiveMessage.WaitTimeSeconds) > 20 ||
@@ -309,7 +319,7 @@ export class MiniSQSClient {
 
 		const timeout = receiveMessage.WaitTimeSeconds * 1000 + 1000;
 
-		const client = this.receiveMessageClient(timeout, clientClass);
+		const client = this.receiveMessageClient(timeout);
 
 		const response = await client.request({
 			path: `/${accountId}/${queueName}/`,
@@ -324,9 +334,9 @@ export class MiniSQSClient {
 		});
 
 		if (response.statusCode !== 200) {
-			throw Error(await response.body.text());
+			throw Error(await this.readText(response.body));
 		}
-		return (await response.body.json()) as ReceiveMessageResult;
+		return await this.readJson<ReceiveMessageResult>(response.body);
 	}
 
 	async changeMessageVisibility(
