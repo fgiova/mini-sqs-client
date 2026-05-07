@@ -1,3 +1,10 @@
+# [5.0.0](https://github.com/fgiova/mini-sqs-client/compare/4.0.0...5.0.0) (2026-05-07)
+
+
+### Bug Fixes
+
+* set Pool clientTtl to mitigate undici keep-alive memory leak ([9dfb85f](https://github.com/fgiova/mini-sqs-client/commit/9dfb85ff308b965a910bddfdc72b9fd49ee7a261))
+
 # [4.0.0](https://github.com/fgiova/mini-sqs-client/compare/3.4.0...4.0.0) (2026-02-12)
 
 # [3.4.0](https://github.com/fgiova/mini-sqs-client/compare/3.3.0...3.4.0) (2025-09-08)
