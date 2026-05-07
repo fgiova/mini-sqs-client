@@ -158,4 +158,73 @@ test("MiniSQSClient Errors", async (t) => {
 			"messages must be an array",
 		);
 	});
+
+	await t.test("sendMessage invalid JSON success body", async (t) => {
+		const { mockPool, client } = t.context;
+		const message: SendMessage = { MessageBody: "Hello World!" };
+		mockPool
+			.intercept({
+				path: "/000000000000/test/",
+				method: "POST",
+				body: JSON.stringify(message),
+			})
+			.reply(200, "not-json", {
+				headers: { "content-type": "application/json" },
+			});
+		await t.rejects(client.sendMessage(queueARN, message));
+	});
+
+	await t.test("readText body throws, dump succeeds", async (t) => {
+		const { client } = t.context;
+		const readErr = new Error("read fail");
+		const fakeBody = {
+			text: () => Promise.reject(readErr),
+			dump: () => Promise.resolve(),
+		};
+		// biome-ignore lint/suspicious/noExplicitAny: access private for coverage
+		await t.rejects((client as any).readText(fakeBody), readErr);
+	});
+
+	await t.test("readText body throws, dump throws", async (t) => {
+		const { client } = t.context;
+		const readErr = new Error("read fail");
+		const fakeBody = {
+			text: () => Promise.reject(readErr),
+			dump: () => Promise.reject(new Error("dump fail")),
+		};
+		// biome-ignore lint/suspicious/noExplicitAny: access private for coverage
+		await t.rejects((client as any).readText(fakeBody), readErr);
+	});
+
+	await t.test("readJson body throws, dump succeeds", async (t) => {
+		const { client } = t.context;
+		const readErr = new Error("json fail");
+		const fakeBody = {
+			json: () => Promise.reject(readErr),
+			dump: () => Promise.resolve(),
+		};
+		// biome-ignore lint/suspicious/noExplicitAny: access private for coverage
+		await t.rejects((client as any).readJson(fakeBody), readErr);
+	});
+
+	await t.test("receiveMessageClient caches per timeout", async (t) => {
+		const client = new MiniSQSClient("eu-central-1");
+		// biome-ignore lint/suspicious/noExplicitAny: access private for coverage
+		const c1 = (client as any).receiveMessageClient(21000);
+		// biome-ignore lint/suspicious/noExplicitAny: access private for coverage
+		const c2 = (client as any).receiveMessageClient(21000);
+		t.equal(c1, c2);
+		await client.destroy();
+	});
+
+	await t.test("readJson body throws, dump throws", async (t) => {
+		const { client } = t.context;
+		const readErr = new Error("json fail");
+		const fakeBody = {
+			json: () => Promise.reject(readErr),
+			dump: () => Promise.reject(new Error("dump fail")),
+		};
+		// biome-ignore lint/suspicious/noExplicitAny: access private for coverage
+		await t.rejects((client as any).readJson(fakeBody), readErr);
+	});
 });

@@ -45,7 +45,10 @@ export class MiniSQSClient {
 		this.pool =
 			globalDispatcher instanceof MockAgent
 				? (globalDispatcher as MockAgent).get(this.endpoint)
-				: new Pool(this.endpoint, undiciOptions);
+				: new Pool(this.endpoint, {
+						...undiciOptions,
+						clientTtl: 60 * 60 * 1000,
+					});
 
 		if (signer instanceof Signer) {
 			this.signer = signer;
