@@ -1,3 +1,10 @@
+# [5.1.0](https://github.com/fgiova/mini-sqs-client/compare/5.0.0...5.1.0) (2026-05-08)
+
+
+### Features
+
+* update @fgiova/aws-signature and package version to 5.0.0 ([b842663](https://github.com/fgiova/mini-sqs-client/commit/b8426632c7175d5f065558402b440841ff0071c1))
+
 # [5.0.0](https://github.com/fgiova/mini-sqs-client/compare/4.0.0...5.0.0) (2026-05-07)
 
 
