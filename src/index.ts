@@ -362,12 +362,36 @@ export class MiniSQSClient {
 
 	async changeMessageVisibilityBatch(
 		queueARN: string,
+		receiptHandles: {
+			receiptHandle: string;
+			visibilityTimeout: number;
+		}[],
+	): Promise<boolean>;
+	async changeMessageVisibilityBatch(
+		queueARN: string,
 		receiptHandles: string[],
 		visibilityTimeout: number,
+	): Promise<boolean>;
+	async changeMessageVisibilityBatch(
+		queueARN: string,
+		receiptHandles:
+			| string[]
+			| { receiptHandle: string; visibilityTimeout: number }[],
+		visibilityTimeout?: number,
 	) {
 		if (!Array.isArray(receiptHandles)) {
 			throw new Error("receiptHandles must be an array");
 		}
+
+		if (
+			receiptHandles.some((rh) => typeof rh === "string") &&
+			typeof visibilityTimeout !== "number"
+		) {
+			throw new Error(
+				"visibilityTimeout must be provided when receiptHandles is an array of strings",
+			);
+		}
+
 		const queueSettings = this.getQueueARN(queueARN);
 		await this.SQSRequest<
 			{
@@ -380,11 +404,20 @@ export class MiniSQSClient {
 			boolean
 		>(
 			{
-				Entries: receiptHandles.map((receiptHandle) => ({
-					Id: randomUUID(),
-					ReceiptHandle: receiptHandle,
-					VisibilityTimeout: visibilityTimeout,
-				})),
+				Entries: receiptHandles.map((receiptHandle) => {
+					if (typeof receiptHandle === "string") {
+						return {
+							Id: randomUUID(),
+							ReceiptHandle: receiptHandle,
+							VisibilityTimeout: visibilityTimeout as number,
+						};
+					}
+					return {
+						Id: randomUUID(),
+						ReceiptHandle: receiptHandle.receiptHandle,
+						VisibilityTimeout: receiptHandle.visibilityTimeout,
+					};
+				}),
 			},
 			"ChangeMessageVisibilityBatch",
 			queueSettings,

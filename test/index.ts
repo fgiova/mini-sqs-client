@@ -529,4 +529,56 @@ test("MiniSQSClient", { only: true }, async (t) => {
 			client.changeMessageVisibilityBatch(queueARN, receiptHandles, 30),
 		);
 	});
+
+	await t.test(
+		"changeMessageVisibilityBatch with per-handle timeout",
+		async (t) => {
+			const { mockPool, client } = t.context;
+			const receiptHandles = Array.from({ length: 5 }, (_, i) => ({
+				receiptHandle: randomUUID(),
+				visibilityTimeout: i * 10,
+			}));
+			mockPool
+				.intercept({
+					path: "/000000000000/test/",
+					method: "POST",
+					body: (body: string) => {
+						const Entries = JSON.parse(body).Entries as {
+							ReceiptHandle: string;
+							VisibilityTimeout: number;
+						}[];
+						return (
+							Entries.length === receiptHandles.length &&
+							Entries.every(
+								(entry, i) =>
+									entry.ReceiptHandle === receiptHandles[i].receiptHandle &&
+									entry.VisibilityTimeout ===
+										receiptHandles[i].visibilityTimeout,
+							)
+						);
+					},
+					headers: (headers: Record<string, string>) =>
+						headers["x-amz-target"] ===
+						"AmazonSQS.ChangeMessageVisibilityBatch",
+				})
+				.reply(200, {});
+			await t.resolves(
+				client.changeMessageVisibilityBatch(queueARN, receiptHandles),
+			);
+		},
+	);
+
+	await t.test(
+		"changeMessageVisibilityBatch without visibilityTimeout",
+		async (t) => {
+			const { client } = t.context;
+			await t.rejects(
+				// @ts-expect-error string handles require visibilityTimeout
+				client.changeMessageVisibilityBatch(queueARN, [randomUUID()]),
+				new Error(
+					"visibilityTimeout must be provided when receiptHandles is an array of strings",
+				),
+			);
+		},
+	);
 });
