@@ -1,3 +1,10 @@
+# [5.2.0](https://github.com/fgiova/mini-sqs-client/compare/5.1.0...5.2.0) (2026-10-23)
+
+
+### Features
+
+* support per-handle visibilityTimeout in changeMessageVisibilityBatch ([075b45c](https://github.com/fgiova/mini-sqs-client/commit/075b45c7c9a746c65b6b429e7fa59fd78646543c))
+
 # [5.1.0](https://github.com/fgiova/mini-sqs-client/compare/5.0.0...5.1.0) (2026-05-08)
 
 
