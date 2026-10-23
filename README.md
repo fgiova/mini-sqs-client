@@ -55,6 +55,17 @@ await client.changeMessageVisibility(
 	10
 );
 
+// batch: same timeout for every handle, or one timeout per handle
+await client.changeMessageVisibilityBatch(
+	"arn:aws:sqs:eu-central-1:000000000000:test",
+	result.Messages.map((m) => m.ReceiptHandle),
+	30
+);
+await client.changeMessageVisibilityBatch(
+	"arn:aws:sqs:eu-central-1:000000000000:test",
+	result.Messages.map((m, i) => ({ receiptHandle: m.ReceiptHandle, visibilityTimeout: 10 * (i + 1) }))
+);
+
 console.log(message.Body);
 
 await client.deleteMessage("arn:aws:sqs:eu-central-1:000000000000:test", message.ReceiptHandle);
@@ -71,6 +82,7 @@ MiniSQSClient.deleteMessage(queueARN: string, receiptHandle: string): Promise<bo
 MiniSQSClient.deleteMessageBatch(queueARN: string, receiptHandles: string[]): Promise<boolean>
 MiniSQSClient.changeMessageVisibility(queueARN: string, receiptHandle: string, visibilityTimeout: number): Promise<boolean>
 MiniSQSClient.changeMessageVisibilityBatch(queueARN: string, receiptHandles: string[], visibilityTimeout: number): Promise<boolean>
+MiniSQSClient.changeMessageVisibilityBatch(queueARN: string, receiptHandles: { receiptHandle: string; visibilityTimeout: number }[]): Promise<boolean>
 MiniSQSClient.destroy(signer?: boolean): Promise<any[]>
 ```
 
